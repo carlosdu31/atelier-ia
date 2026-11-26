@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Atelier IA · Carlos</title>
+<meta name="description" content="Mon accès personnel à Claude et Gemini.">
+<meta name="theme-color" content="#0f0f14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Atelier IA">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root {
+  --bg: #0f0f14;
+  --bg-2: #15151c;
+  --panel: #1a1a22;
+  --panel-2: #20202a;
+  --line: #2a2a35;
+  --fg: #f2f1ee;
+  --muted: #9b9aa5;
+  --faint: #6c6b76;
+  --claude: #D97757;
+  --gemini: #4F7DF3;
+  --gpt: #10a37f;
+  --ok: #3fb67f;
+  --warn: #e0a33a;
+  --bad: #e0574f;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 12px 40px rgba(0,0,0,.35);
+  --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f5f2; --bg-2: #efede8; --panel: #ffffff; --panel-2: #f7f6f3; --line: #e3e0d9;
+    --fg: #1c1b19; --muted: #6b6961; --faint: #9a978e; --shadow: 0 12px 40px rgba(40,30,10,.10);
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* Layout */
+.app { display: grid; grid-template-columns: 280px 1fr; height: 100dvh; }
+.side { background: var(--bg-2); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; padding-top: var(--safe-t); }
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+@media (max-width: 899px) {
+  .app { grid-template-columns: 1fr; }
+  .side { position: fixed; inset: 0 auto 0 0; width: min(86vw, 320px); z-index: 40; transform: translateX(-102%); transition: transform .25s ease; box-shadow: var(--shadow); }
+  .app.drawer-open .side { transform: none; }
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 35; }
+}
+
+/* Sidebar */
+.brand { display: flex; align-items: center; gap: 10px; padding: 18px 18px 10px; }
+.logo { width: 34px; height: 34px; position: relative; flex: none; }
+.logo i { position: absolute; width: 22px; height: 22px; border-radius: 50%; top: 6px; }
+.logo i:first-child { left: 0; background: radial-gradient(circle at 35% 30%, #ffd9c9, var(--claude) 45%, #8c3f25); }
+.logo i:last-child { right: 0; background: radial-gradient(circle at 35% 30%, #d6e2ff, var(--gemini) 45%, #24418f); mix-blend-mode: screen; }
+.brand-name { font-family: var(--serif); font-size: 19px; }
+.brand-sub { font-size: 12px; color: var(--muted); margin-top: -2px; }
+.side-actions { padding: 6px 12px 12px; display: grid; gap: 6px; }
+.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 10px 14px; font-size: 15px; transition: background .15s, border-color .15s, transform .05s; }
+.btn:hover { background: var(--panel-2); }
+.btn:active { transform: scale(.98); }
+.btn-wide { width: 100%; justify-content: flex-start; }
+.btn-primary { background: var(--fg); color: var(--bg); border-color: transparent; }
+.btn-primary:hover { background: var(--fg); opacity: .92; }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover { background: var(--panel); }
+.icon-btn { width: 40px; height: 40px; padding: 0; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; background: transparent; color: var(--muted); }
+.icon-btn:hover { background: var(--panel); color: var(--fg); }
+.icon-btn svg, .btn svg { width: 20px; height: 20px; flex: none; }
+.side-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); padding: 10px 20px 6px; }
+.history { flex: 1; overflow-y: auto; padding: 0 8px 12px; -webkit-overflow-scrolling: touch; }
+.h-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 10px; padding: 9px 12px; color: var(--fg); font-size: 14px; }
+.h-item:hover, .h-item.is-active { background: var(--panel); }
+.h-item .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h-item .k { font-size: 11px; color: var(--faint); flex: none; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot.claude { background: var(--claude); } .dot.gemini { background: var(--gemini); } .dot.chatgpt { background: var(--gpt); }
+.h-empty { color: var(--faint); font-size: 13px; padding: 8px 14px; }
+.side-foot { border-top: 1px solid var(--line); padding: 10px 12px calc(10px + var(--safe-b)); display: grid; gap: 4px; }
+
+/* Top bar */
+.top { display: flex; align-items: center; gap: 8px; padding: calc(10px + var(--safe-t)) 14px 10px; border-bottom: 1px solid transparent; }
+.top.scrolled { border-bottom-color: var(--line); background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.top-title { flex: 1; min-width: 0; font-size: 15px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-btn, .new-top { display: none; }
+@media (max-width: 899px) { .menu-btn, .new-top { display: inline-flex; } }
+.seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; border-radius: 9px; padding: 6px 12px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+
+/* Scroll area */
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.wrap { max-width: 820px; margin: 0 auto; padding: 0 18px; }
+
+/* Hero */
+.hero { padding: 6vh 0 18px; }
+.hello { font-family: var(--serif); font-weight: 400; font-size: clamp(30px, 6vw, 44px); line-height: 1.1; margin: 0; letter-spacing: -.01em; }
+.hello em { font-style: normal; background: linear-gradient(90deg, var(--claude), #b46fd0 50%, var(--gemini)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p { color: var(--muted); margin: 10px 0 0; font-size: 17px; }
+.status-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-size: 13px; color: var(--muted); text-decoration: none; }
+.pill:hover { color: var(--fg); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin: 26px 0 10px; }
+.card { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 6px; min-height: 112px; transition: border-color .15s, transform .1s, background .15s; }
+.card:hover { border-color: color-mix(in srgb, var(--fg) 25%, var(--line)); }
+.card:active { transform: scale(.985); }
+.card .ic { font-size: 22px; line-height: 1; }
+.card .n { font-weight: 600; font-size: 15px; }
+.card .d { color: var(--muted); font-size: 13px; line-height: 1.35; }
+.card .via { margin-top: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--faint); }
+.section-label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin: 26px 0 0; }
+
+/* Messages */
+.thread { padding: 18px 0 30px; display: flex; flex-direction: column; gap: 22px; }
+.msg { display: flex; gap: 12px; }
+.msg .av { width: 30px; height: 30px; border-radius: 50%; flex: none; margin-top: 2px; }
+.av.user { background: var(--panel-2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--muted); }
+.av.claude { background: radial-gradient(circle at 35% 30%, #ffd9c9, var(--claude) 45%, #8c3f25); }
+.av.gemini { background: radial-gradient(circle at 35% 30%, #d6e2ff, var(--gemini) 45%, #24418f); }
+.msg .body { flex: 1; min-width: 0; }
+.msg .who { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
+.msg.user .content { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; white-space: pre-wrap; word-wrap: break-word; }
+.msg-imgs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.msg-imgs img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.md { word-wrap: break-word; overflow-wrap: anywhere; }
+.md > :first-child { margin-top: 0; } .md > :last-child { margin-bottom: 0; }
+.md p, .md ul, .md ol, .md pre, .md blockquote, .md table { margin: 0 0 12px; }
+.md h1, .md h2, .md h3, .md h4 { font-family: var(--serif); font-weight: 500; margin: 18px 0 8px; line-height: 1.25; }
+.md h1 { font-size: 24px; } .md h2 { font-size: 21px; } .md h3 { font-size: 18px; } .md h4 { font-size: 16px; }
+.md ul, .md ol { padding-left: 22px; }
+.md li { margin: 3px 0; }
+.md code { font-family: var(--mono); font-size: .88em; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
+.md pre { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; overflow-x: auto; position: relative; }
+.md pre code { background: none; border: 0; padding: 0; font-size: 13.5px; line-height: 1.55; }
+.md blockquote { border-left: 3px solid var(--line); padding-left: 12px; color: var(--muted); }
+.md a { color: var(--gemini); text-decoration: underline; text-underline-offset: 2px; }
+.md table { border-collapse: collapse; display: block; overflow-x: auto; font-size: 14px; }
+.md th, .md td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.md th { background: var(--panel); }
+.md hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+.copy-code { position: absolute; top: 6px; right: 6px; font-size: 12px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 2px 8px; color: var(--muted); }
+.msg-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.msg-tools .btn { padding: 5px 10px; font-size: 13px; border-radius: 9px; background: transparent; color: var(--muted); }
+.msg-tools .btn:hover { color: var(--fg); background: var(--panel); }
+.msg-tools .btn svg { width: 16px; height: 16px; }
+.sources { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.sources a { font-size: 12px; text-decoration: none; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sources a:hover { color: var(--fg); }
+.typing { display: inline-flex; gap: 4px; padding: 6px 0; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); animation: blink 1.2s infinite ease-in-out; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+.err { color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); border: 1px solid color-mix(in srgb, var(--bad) 30%, transparent); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+
+/* Launch card */
+.launch { border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 16px; }
+.launch h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.launch p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+.launch textarea { width: 100%; min-height: 110px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); padding: 10px 12px; resize: vertical; font-size: 15px; line-height: 1.45; }
+.launch .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.btn-claude { background: var(--claude); color: #fff; border-color: transparent; }
+.btn-gemini { background: var(--gemini); color: #fff; border-color: transparent; }
+.btn-chatgpt { background: var(--gpt); color: #fff; border-color: transparent; } .btn-chatgpt:hover { background: var(--gpt); opacity: .92; }
+.btn-claude:hover { background: var(--claude); opacity: .92; } .btn-gemini:hover { background: var(--gemini); opacity: .92; }
+
+/* Composer */
+.composer-zone { padding: 8px 14px calc(12px + var(--safe-b)); background: linear-gradient(to top, var(--bg) 70%, transparent); }
+.composer { max-width: 820px; margin: 0 auto; border: 1px solid var(--line); background: var(--panel); border-radius: 22px; box-shadow: var(--shadow); padding: 8px; }
+.composer:focus-within { border-color: color-mix(in srgb, var(--fg) 30%, var(--line)); }
+.tpl-chip { display: inline-flex; align-items: center; gap: 6px; margin: 4px 6px 2px; padding: 4px 6px 4px 10px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); font-size: 13px; }
+.tpl-chip button { border: 0; background: transparent; color: var(--muted); padding: 0 4px; font-size: 16px; line-height: 1; }
+.attach-row { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 6px; }
+.thumb { position: relative; }
+.thumb img { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.thumb button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); font-size: 13px; line-height: 1; padding: 0; }
+textarea.input { width: 100%; border: 0; outline: 0; background: transparent; resize: none; padding: 8px 10px; font-size: 16px; line-height: 1.45; max-height: 40vh; min-height: 44px; display: block; }
+.c-row { display: flex; align-items: center; gap: 6px; padding: 2px 2px 0; }
+.c-row .spacer { flex: 1; }
+.route-hint { font-size: 12px; color: var(--faint); display: flex; align-items: center; gap: 6px; padding: 6px 10px 0; min-height: 22px; max-width: 820px; margin: 0 auto; }
+.send { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--fg); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.send:disabled { opacity: .35; cursor: default; }
+.send svg { width: 20px; height: 20px; }
+.route-seg button { padding: 5px 10px; font-size: 13px; }
+.route-seg button[data-route="claude"][aria-pressed="true"] { color: var(--claude); }
+.route-seg button[data-route="gemini"][aria-pressed="true"] { color: var(--gemini); }
+.route-seg button[data-route="chatgpt"][aria-pressed="true"] { color: var(--gpt); }
+@media (max-width: 420px) { .route-seg button { padding: 5px 7px; font-size: 12.5px; } .c-row .icon-btn { width: 34px; } }
+.apps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.app-link { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); text-decoration: none; font-size: 14px; }
+.app-link:hover { border-color: color-mix(in srgb, var(--fg) 25%, var(--line)); }
+.app-link small { color: var(--faint); font-size: 12px; }
+.mic.on { color: var(--bad); }
+
+/* Sheet (settings) */
+.sheet-back { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+@media (min-width: 700px) { .sheet-back { align-items: center; } }
+.sheet { background: var(--bg); border: 1px solid var(--line); width: min(620px, 100%); max-height: 92dvh; overflow-y: auto; border-radius: 22px 22px 0 0; padding: 20px 20px calc(20px + var(--safe-b)); box-shadow: var(--shadow); }
+@media (min-width: 700px) { .sheet { border-radius: 22px; } }
+.sheet h2 { font-family: var(--serif); font-weight: 400; font-size: 26px; margin: 0 0 4px; }
+.sheet .lead { color: var(--muted); margin: 0 0 18px; font-size: 14px; }
+.field { display: grid; gap: 6px; margin-bottom: 16px; }
+.field label { font-size: 14px; font-weight: 600; }
+.field .help { font-size: 13px; color: var(--muted); }
+.field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 10px 12px; font-size: 16px; }
+.field textarea { min-height: 90px; resize: vertical; }
+.group { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 16px 2px; margin-bottom: 16px; background: var(--bg-2); }
+.group-title { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 12px; }
+.key-state { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-weight: 400; margin-left: auto; }
+.key-state.on { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.sheet-actions { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; margin-top: 8px; }
+
+/* Toast */
+.toast { position: fixed; left: 50%; bottom: calc(110px + var(--safe-b)); transform: translateX(-50%) translateY(20px); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 14px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 80; max-width: min(92vw, 480px); text-align: center; box-shadow: var(--shadow); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Historique">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><i></i><i></i></div>
+      <div><div class="brand-name">Atelier IA</div><div class="brand-sub">Claude × Gemini</div></div>
+    </div>
+    <div class="side-actions">
+      <button class="btn btn-wide" id="newBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nouvelle demande</button>
+    </div>
+    <div class="side-title">Récent</div>
+    <nav class="history" id="history"></nav>
+    <div class="side-foot">
+      <a class="btn btn-ghost btn-wide" id="usageLink" href="https://claude.ai/artifact/KNwKMBGtrNXdwQeWcLpySK" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg>Mon utilisation</a>
+      <button class="btn btn-ghost btn-wide" id="settingsBtn2" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Réglages</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <main class="main">
+    <header class="top" id="top">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="Ouvrir l’historique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+      <div class="top-title" id="topTitle">Nouvelle demande</div>
+      <div class="seg" role="group" aria-label="Mode">
+        <button type="button" data-mode="launch" aria-pressed="true" title="Ouvre la demande dans l’app Claude ou Gemini (abonnements)">Apps</button>
+        <button type="button" data-mode="api" aria-pressed="false" title="Réponse directement dans la page (clés API)">Ici</button>
+      </div>
+      <button class="icon-btn new-top" id="newTop" type="button" aria-label="Nouvelle demande"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+      <button class="icon-btn" id="settingsBtn" type="button" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </header>
+
+    <div class="scroll" id="scroll">
+      <div class="wrap">
+        <section class="hero" id="hero">
+          <h1 class="hello"><span id="greet">Bonjour</span> <span id="hName">Carlos</span>,<br><em>on s’y met ?</em></h1>
+          <p>Pose ta question : je choisis le meilleur entre Claude et Gemini, j’affine ta demande et je l’envoie.</p>
+          <div class="status-row">
+            <span class="pill" id="modePill">Mode Apps · tes abonnements Pro</span>
+            <a class="pill" href="https://claude.ai/artifact/KNwKMBGtrNXdwQeWcLpySK" target="_blank" rel="noopener">Voir mon utilisation ↗</a>
+          </div>
+          <div class="section-label">Mes apps</div>
+          <div class="apps">
+            <a class="app-link" href="https://claude.ai/new" target="_blank" rel="noopener"><span class="dot claude"></span>Claude <small>Pro</small></a>
+            <a class="app-link" href="https://gemini.google.com/app" target="_blank" rel="noopener"><span class="dot gemini"></span>Gemini <small>Pro</small></a>
+            <a class="app-link" href="https://chatgpt.com/" target="_blank" rel="noopener"><span class="dot chatgpt"></span>ChatGPT <small>gratuit</small></a>
+            <a class="app-link" href="https://notebooklm.google.com/" target="_blank" rel="noopener"><span class="dot gemini"></span>NotebookLM <small>docs</small></a>
+            <a class="app-link" href="https://claude.ai/artifact/KNwKMBGtrNXdwQeWcLpySK" target="_blank" rel="noopener">📊 Mon utilisation</a>
+          </div>
+          <div class="section-label">Raccourcis</div>
+          <div class="grid" id="templates"></div>
+        </section>
+        <section class="thread" id="thread" hidden></section>
+      </div>
+    </div>
+
+    <div class="composer-zone">
+      <form class="composer" id="composer" autocomplete="off">
+        <div id="tplChipBox"></div>
+        <div class="attach-row" id="attachRow" hidden></div>
+        <label class="sr" for="input">Ta demande</label>
+        <textarea class="input" id="input" rows="1" placeholder="Demande-moi n’importe quoi…" enterkeyhint="send"></textarea>
+        <div class="c-row">
+          <button class="icon-btn" id="attachBtn" type="button" aria-label="Ajouter une image" title="Ajouter une image (mode Ici)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>
+          <input type="file" id="file" accept="image/*" multiple hidden>
+          <button class="icon-btn mic" id="micBtn" type="button" aria-label="Dicter" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+          <div class="seg route-seg" role="group" aria-label="Destination">
+            <button type="button" data-route="auto" aria-pressed="true">Auto</button>
+            <button type="button" data-route="claude" aria-pressed="false">Claude</button>
+            <button type="button" data-route="gemini" aria-pressed="false">Gemini</button>
+            <button type="button" data-route="chatgpt" aria-pressed="false" title="ChatGPT (gratuit) : ouverture dans l’app">GPT</button>
+          </div>
+          <span class="spacer"></span>
+          <button class="send" id="sendBtn" type="submit" aria-label="Envoyer" disabled><svg id="sendIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        </div>
+      </form>
+      <div class="route-hint" id="routeHint" aria-live="polite"></div>
+    </div>
+  </main>
+</div>
+
+<div class="sheet-back" id="sheetBack" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h2 id="sheetTitle">Réglages</h2>
+    <p class="lead">Tout reste sur cet appareil : rien n’est envoyé ailleurs que chez Anthropic et Google.</p>
+
+    <div class="group">
+      <div class="group-title">Général</div>
+      <div class="field">
+        <label for="sName">Ton prénom</label>
+        <input id="sName" type="text" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label for="sMode">Mode par défaut</label>
+        <select id="sMode">
+          <option value="launch">Apps : ouvre Claude ou Gemini (abonnements Pro)</option>
+          <option value="api">Ici : réponse dans la page (clés API)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sAbout">Ce que l’IA doit savoir sur toi</label>
+        <textarea id="sAbout" placeholder="Ex. Je vis en France, je travaille dans…, je préfère des réponses concises et concrètes."></textarea>
+        <div class="help">Ajouté à chaque demande, dans les deux modes.</div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title"><span class="dot claude"></span>Claude<span class="key-state" id="kClaude">Pas de clé</span></div>
+      <div class="field">
+        <label for="sClaudeKey">Clé API Anthropic</label>
+        <input id="sClaudeKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+        <div class="help">Facultatif, seulement pour le mode Ici. À créer sur <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (payant à l’usage, séparé de l’abonnement Pro).</div>
+      </div>
+      <div class="field">
+        <label for="sClaudeModel">Modèle</label>
+        <select id="sClaudeModel">
+          <option value="claude-sonnet-5-5">Claude Sonnet 5.5 · équilibré</option>
+          <option value="claude-opus-5-5">Claude Opus 5.5 · le plus puissant</option>
+          <option value="claude-haiku-5-5">Claude Haiku 5.5 · rapide et économique</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title"><span class="dot gemini"></span>Gemini<span class="key-state" id="kGemini">Pas de clé</span></div>
+      <div class="field">
+        <label for="sGeminiKey">Clé API Google AI Studio</label>
+        <input id="sGeminiKey" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false">
+        <div class="help">Facultatif, seulement pour le mode Ici. Gratuite avec des limites sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a>.</div>
+      </div>
+      <div class="field">
+        <label for="sGeminiModel">Modèle</label>
+        <input id="sGeminiModel" type="text" list="geminiModels" spellcheck="false">
+        <datalist id="geminiModels">
+          <option value="gemini-3.7-flash">
+          <option value="gemini-3.6-flash">
+          <option value="gemini-3.5-flash-lite">
+        </datalist>
+        <div class="help">Recherche Google activée automatiquement pour les questions d’actualité.</div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">🔒 Sécurité<span class="key-state" id="kLock">Pas de code</span></div>
+      <div class="field">
+        <label for="sCode">Code de verrouillage des clés</label>
+        <input id="sCode" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Nouveau code (4 chiffres ou plus)">
+        <div class="help">Chiffre tes clés API sur cet appareil. Le code est demandé une fois par session, et sans lui personne ne peut lire tes clés. Code oublié : retire-le et saisis à nouveau tes clés.</div>
+      </div>
+      <div class="field"><button class="btn" id="removeLock" type="button" hidden>Retirer le code</button></div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn" id="clearBtn" type="button">Effacer l’historique</button>
+      <button class="btn btn-primary" id="saveBtn" type="button">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-back" id="lockBack" hidden>
+  <form class="sheet" id="lockForm" role="dialog" aria-modal="true" aria-labelledby="lockTitle" style="max-width:420px">
+    <h2 id="lockTitle">Déverrouiller</h2>
+    <p class="lead">Saisis ton code pour utiliser tes clés API sur cet appareil.</p>
+    <div class="field"><label for="lockCode" class="sr">Code</label><input id="lockCode" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Code"></div>
+    <p class="err" id="lockErr" hidden>Code incorrect.</p>
+    <div class="sheet-actions"><button class="btn" id="lockCancel" type="button">Annuler</button><button class="btn btn-primary" type="submit">Déverrouiller</button></div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Stockage ---------- */
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('atelier.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('atelier.' + k, JSON.stringify(v)); return true; } catch { return false; } }
+};
+const settings = Object.assign({
+  name: 'Carlos', mode: 'launch', about: '',
+  claudeKey: '', claudeModel: 'claude-sonnet-5-5',
+  geminiKey: '', geminiModel: 'gemini-3.7-flash'
+}, LS.get('settings', {}));
+let convs = LS.get('convs', []);
+const secrets = { claudeKey: settings.claudeKey || '', geminiKey: settings.geminiKey || '' };
+let unlocked = false; let memKey = null;
+try { const u = sessionStorage.getItem('atelier.unlocked'); if (settings.lock && u) { Object.assign(secrets, JSON.parse(u)); unlocked = true; } } catch {}
+const isLocked = () => !!settings.lock && !unlocked;
+function persistSettings() {
+  const out = { ...settings, claudeKey: settings.lock ? '' : secrets.claudeKey, geminiKey: settings.lock ? '' : secrets.geminiKey };
+  LS.set('settings', out); delete settings.claudeKey; delete settings.geminiKey;
+}
+const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+async function deriveKey(code, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 250000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function lockWith(code) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)); const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(code, salt); memKey = { key, salt };
+  await encryptWith(key, salt);
+  try { sessionStorage.setItem('atelier.unlocked', JSON.stringify(secrets)); } catch {}
+}
+async function encryptWith(key, salt) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(secrets)));
+  settings.lock = { salt: b64(salt), iv: b64(iv), data: b64(data) }; unlocked = true;
+  try { sessionStorage.setItem('atelier.unlocked', JSON.stringify(secrets)); } catch {}
+}
+async function unlockWith(code) {
+  const L = settings.lock;
+  const salt = unb64(L.salt); const key = await deriveKey(code, salt);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(L.iv) }, key, unb64(L.data));
+  memKey = { key, salt }; unlocked = true;
+  Object.assign(secrets, JSON.parse(new TextDecoder().decode(plain)));
+  try { sessionStorage.setItem('atelier.unlocked', JSON.stringify(secrets)); } catch {}
+}
+const saveConvs = () => { convs = convs.slice(0, 60); LS.set('convs', convs.map((c) => ({ ...c, messages: c.messages.map(({ images, ...m }) => m) }))); };
+
+/* ---------- Raccourcis ---------- */
+const TEMPLATES = [
+  { id: 'mail', ic: '✉️', n: 'Écrire un email', d: 'Pro, clair, avec objet et version courte.', via: 'claude', ph: 'À qui, pourquoi, quel ton ?',
+    wrap: (x) => `Rédige un email en français à partir de ce contexte :\n${x}\n\nDonne : 1) un objet, 2) l’email complet, ton professionnel et chaleureux, concis, 3) une version plus courte. Signe « Carlos ».` },
+  { id: 'resume', ic: '📄', n: 'Résumer', d: 'Un texte, un lien, une vidéo : l’essentiel en 2 minutes.', via: 'auto', ph: 'Colle le texte ou le lien…',
+    wrap: (x) => `Résume ceci en français :\n${x}\n\nFormat : une phrase de synthèse, puis 5 points clés maximum, puis ce que je dois retenir ou faire.` },
+  { id: 'recherche', ic: '🔎', n: 'Chercher sur le web', d: 'Infos récentes avec sources.', via: 'gemini', ph: 'Que veux-tu savoir ?', web: true,
+    wrap: (x) => `Fais une recherche sur le web et donne-moi les informations les plus récentes sur : ${x}\n\nDate chaque information, cite tes sources avec leurs liens, et signale ce qui est incertain.` },
+  { id: 'deep', ic: '🧭', n: 'Recherche approfondie', d: 'Un vrai rapport sur un sujet complexe.', via: 'gemini', ph: 'Quel sujet creuser ?', web: true,
+    wrap: (x) => `Utilise Deep Research. Prépare un rapport complet et sourcé sur : ${x}\n\nStructure : synthèse, contexte, points clés, comparatif si utile, recommandations, sources.` },
+  { id: 'plan', ic: '🗓️', n: 'Organiser', d: 'Plan d’action, planning, priorités.', via: 'claude', ph: 'Qu’as-tu à organiser ?',
+    wrap: (x) => `Aide-moi à m’organiser : ${x}\n\nDonne un plan d’action concret : étapes numérotées, durée estimée, priorités, et la toute première action à faire aujourd’hui.` },
+  { id: 'decider', ic: '⚖️', n: 'Décider', d: 'Peser le pour et le contre, trancher.', via: 'claude', ph: 'Quelle décision ?',
+    wrap: (x) => `Aide-moi à prendre cette décision : ${x}\n\nPose d’abord les critères importants, compare les options (tableau), donne les risques, puis ta recommandation argumentée. Pose-moi une question si une info essentielle manque.` },
+  { id: 'expliquer', ic: '💡', n: 'Expliquer simplement', d: 'Comprendre un sujet sans jargon.', via: 'claude', ph: 'Qu’est-ce qui est flou ?',
+    wrap: (x) => `Explique-moi simplement, comme à quelqu’un d’intelligent mais pas spécialiste : ${x}\n\nUtilise un exemple concret et termine par les 3 idées à retenir.` },
+  { id: 'code', ic: '💻', n: 'Code et tech', d: 'Écrire, corriger, expliquer du code.', via: 'claude', ph: 'Décris le besoin ou colle le code…',
+    wrap: (x) => `${x}\n\nRéponds avec du code complet et commenté, explique brièvement les choix, et signale les cas limites.` },
+  { id: 'traduire', ic: '🌍', n: 'Traduire', d: 'Naturel, adapté au contexte.', via: 'claude', ph: 'Texte et langue voulue…',
+    wrap: (x) => `Traduis ce texte de façon naturelle (pas mot à mot), en gardant le ton. Si la langue cible n’est pas précisée, traduis en anglais :\n${x}` },
+  { id: 'image', ic: '🎨', n: 'Créer une image', d: 'Illustration, visuel, logo.', via: 'gemini', ph: 'Décris l’image…',
+    wrap: (x) => `Génère une image : ${x}. Style soigné, haute qualité.` },
+  { id: 'sortie', ic: '📍', n: 'Lieux et trajets', d: 'Restos, sorties, itinéraires.', via: 'gemini', ph: 'Où, quoi, avec qui ?', web: true,
+    wrap: (x) => `Avec Google Maps et des infos à jour, aide-moi : ${x}\n\nDonne 3 à 5 suggestions avec adresse, horaires, prix approximatif et pourquoi c’est un bon choix.` },
+  { id: 'google', ic: '📁', n: 'Mes fichiers Google', d: 'Gmail, Drive, Docs, Agenda.', via: 'gemini', ph: 'Que chercher dans tes fichiers ?',
+    wrap: (x) => `En utilisant mes applications Google (Gmail, Drive, Docs, Agenda) : ${x}` }
+];
+
+/* ---------- Routage automatique ---------- */
+const RULES = [
+  { to: 'gemini', w: 3, why: 'tes fichiers Google', re: /\b(gmail|drive|google docs?|google sheets?|agenda|calendar|mes mails?|mes e-?mails?|ma boîte)\b/i },
+  { to: 'gemini', w: 3, why: 'image ou vidéo à créer', re: /\b(g[ée]n[èe]re|cr[ée]e|dessine|fais)[- ](moi )?(une |un )?(image|illustration|photo|logo|dessin|vid[ée]o|visuel)|\b(image|vid[ée]o) de\b/i },
+  { to: 'gemini', w: 3, why: 'YouTube', re: /youtu\.?be|\byoutube\b/i },
+  { to: 'gemini', w: 2, why: 'infos récentes sur le web', re: /\b(actu(alit[ée]s?)?|aujourd'?hui|cette semaine|derni[èe]res? nouvelles?|en ce moment|r[ée]cent|m[ée]t[ée]o|prix|cours de|score|r[ée]sultats? du match|horaires?|ouvert|news)\b/i },
+  { to: 'gemini', w: 2, why: 'lieux et trajets', re: /\b(restaurant|resto|itin[ée]raire|trajet|pr[èe]s de|autour de|adresse|h[ôo]tel|voyage|visiter|sortie)\b/i },
+  { to: 'gemini', w: 2, why: 'recherche web', re: /\b(cherche|recherche|trouve(-moi)?|compare les prix|quelles? sont les meilleur)/i },
+  { to: 'claude', w: 2, why: 'rédaction', re: /\b(r[ée]dige|[ée]cris|reformule|corrige|am[ée]liore|email|e-mail|mail|lettre|courrier|message|post linkedin|cv|lettre de motivation)\b/i },
+  { to: 'claude', w: 2, why: 'code', re: /\b(code|script|python|javascript|html|css|sql|bug|fonction|api|regex|excel|formule)\b|```/i },
+  { to: 'claude', w: 2, why: 'analyse et raisonnement', re: /\b(analyse|explique|pourquoi|strat[ée]gie|d[ée]cider|d[ée]cision|avantages?|inconv[ée]nients?|plan|organise|r[ée]sume|synth[èe]se|contrat|juridique)\b/i }
+];
+function route(text, tpl) {
+  if (tpl && tpl.via !== 'auto') return { to: tpl.via, why: tpl.n.toLowerCase() };
+  const score = { claude: 0, gemini: 0 };
+  const why = { claude: [], gemini: [] };
+  for (const r of RULES) if (r.re.test(text)) { score[r.to] += r.w; if (!why[r.to].includes(r.why)) why[r.to].push(r.why); }
+  if (/https?:\/\//i.test(text) && !/youtu/i.test(text)) { score.gemini += 1; why.gemini.push('lien à ouvrir'); }
+  if (text.length > 1500) { score.claude += 1; why.claude.push('long texte'); }
+  if (score.gemini > score.claude) return { to: 'gemini', why: why.gemini.slice(0, 2).join(', ') };
+  if (score.claude > 0) return { to: 'claude', why: why.claude.slice(0, 2).join(', ') };
+  return { to: 'claude', why: 'demande générale' };
+}
+
+/* ---------- État ---------- */
+const $ = (id) => document.getElementById(id);
+const state = { mode: settings.mode, route: 'auto', tpl: null, conv: null, images: [], busy: false, abort: null };
+const NAMES = { claude: 'Claude', gemini: 'Gemini', chatgpt: 'ChatGPT' };
+
+/* ---------- Utilitaires ---------- */
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let toastTimer;
+function toast(msg, ms = 3200) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.append(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch {} ta.remove(); return ok;
+  }
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const greetWord = () => { const h = new Date().getHours(); return h < 5 ? 'Bonsoir' : h < 18 ? 'Bonjour' : 'Bonsoir'; };
+const timeAgo = (t) => { const s = (Date.now() - t) / 1000; if (s < 3600) return Math.max(1, Math.round(s / 60)) + ' min'; if (s < 86400) return Math.round(s / 3600) + ' h'; return Math.round(s / 86400) + ' j'; };
+
+/* ---------- Markdown (sûr : tout est échappé d’abord) ---------- */
+function inline(s) {
+  const codes = [];
+  s = s.replace(/`([^`\n]+)`/g, (_, c) => { codes.push(c); return '\u0000' + (codes.length - 1) + '\u0000'; });
+  s = esc(s);
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, t, u) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`);
+  s = s.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_, p, u) => `${p}<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>').replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  s = s.replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${esc(codes[+i])}</code>`);
+}
+function md(src) {
+  const lines = String(src).replace(/\r/g, '').split('\n');
+  let out = '', i = 0;
+  const isTableSep = (l) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l);
+  const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+  while (i < lines.length) {
+    const l = lines[i];
+    const fence = l.match(/^\s*```\s*([\w+-]*)/);
+    if (fence) {
+      const buf = []; i++;
+      while (i < lines.length && !/^\s*```/.test(lines[i])) buf.push(lines[i++]);
+      i++;
+      out += `<pre><button class="copy-code" type="button">Copier</button><code>${esc(buf.join('\n'))}</code></pre>`; continue;
+    }
+    if (/^\s*$/.test(l)) { i++; continue; }
+    const h = l.match(/^(#{1,4})\s+(.*)$/);
+    if (h) { out += `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`; i++; continue; }
+    if (/^\s*(-{3,}|\*{3,})\s*$/.test(l)) { out += '<hr>'; i++; continue; }
+    if (l.includes('|') && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+      const head = cells(l); i += 2; let rows = '';
+      while (i < lines.length && lines[i].includes('|') && lines[i].trim()) { rows += '<tr>' + cells(lines[i]).map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>'; i++; }
+      out += `<table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`; continue;
+    }
+    if (/^\s*>/.test(l)) { const buf = []; while (i < lines.length && /^\s*>/.test(lines[i])) buf.push(lines[i++].replace(/^\s*>\s?/, '')); out += `<blockquote>${md(buf.join('\n'))}</blockquote>`; continue; }
+    const li = l.match(/^\s*([-*•]|\d+[.)])\s+/);
+    if (li) {
+      const ordered = /\d/.test(li[1]); const tag = ordered ? 'ol' : 'ul'; let items = '';
+      while (i < lines.length) {
+        const m = lines[i].match(/^\s*([-*•]|\d+[.)])\s+(.*)$/);
+        if (m && (/\d/.test(m[1]) === ordered)) { items += `<li>${inline(m[2])}</li>`; i++; }
+        else if (lines[i] && /^\s{2,}\S/.test(lines[i]) && items) { items = items.replace(/<\/li>$/, '<br>' + inline(lines[i].trim()) + '</li>'); i++; }
+        else break;
+      }
+      out += `<${tag}>${items}</${tag}>`; continue;
+    }
+    const buf = [];
+    while (i < lines.length && lines[i].trim() && !/^\s*(```|#{1,4}\s|>|([-*•]|\d+[.)])\s+)/.test(lines[i]) && !(lines[i].includes('|') && i + 1 < lines.length && isTableSep(lines[i + 1]))) buf.push(lines[i++]);
+    if (!buf.length) buf.push(lines[i++]);
+    out += `<p>${buf.map(inline).join('<br>')}</p>`;
+  }
+  return out;
+}
+
+/* ---------- Rendu ---------- */
+function renderTemplates() {
+  const g = $('templates'); g.replaceChildren();
+  for (const t of TEMPLATES) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'card';
+    const via = t.via === 'auto' ? 'Auto' : NAMES[t.via];
+    b.innerHTML = `<span class="ic">${t.ic}</span><span class="n"></span><span class="d"></span><span class="via">${t.via === 'auto' ? '' : `<span class="dot ${t.via}"></span>`}${via}</span>`;
+    b.querySelector('.n').textContent = t.n; b.querySelector('.d').textContent = t.d;
+    b.addEventListener('click', () => setTemplate(t));
+    g.append(b);
+  }
+}
+function setTemplate(t) {
+  state.tpl = t;
+  const box = $('tplChipBox'); box.replaceChildren();
+  if (t) {
+    const c = document.createElement('span'); c.className = 'tpl-chip';
+    c.append(document.createTextNode(t.ic + ' ' + t.n));
+    const x = document.createElement('button'); x.type = 'button'; x.setAttribute('aria-label', 'Retirer le raccourci'); x.textContent = '×';
+    x.addEventListener('click', () => setTemplate(null)); c.append(x); box.append(c);
+    $('input').placeholder = t.ph;
+  } else $('input').placeholder = 'Demande-moi n’importe quoi…';
+  $('input').focus(); updateHint();
+}
+function renderHistory() {
+  const h = $('history'); h.replaceChildren();
+  if (!convs.length) { const p = document.createElement('div'); p.className = 'h-empty'; p.textContent = 'Tes demandes apparaîtront ici.'; h.append(p); return; }
+  for (const c of convs) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'h-item' + (state.conv && state.conv.id === c.id ? ' is-active' : '');
+    const d = document.createElement('span'); d.className = 'dot ' + c.target;
+    const t = document.createElement('span'); t.className = 't'; t.textContent = c.title;
+    const k = document.createElement('span'); k.className = 'k'; k.textContent = (c.kind === 'launch' ? '↗ ' : '') + timeAgo(c.updated || c.created);
+    b.append(d, t, k); b.addEventListener('click', () => { openConv(c.id); closeDrawer(); });
+    h.append(b);
+  }
+}
+function showHero(on) { $('hero').hidden = !on; $('thread').hidden = on; }
+function setTitle(t) { $('topTitle').textContent = t || 'Nouvelle demande'; }
+
+function msgEl(m) {
+  const wrap = document.createElement('div'); wrap.className = 'msg ' + (m.role === 'user' ? 'user' : 'ai');
+  const av = document.createElement('div');
+  if (m.role === 'user') { av.className = 'av user'; av.textContent = (settings.name || 'C').slice(0, 1).toUpperCase(); }
+  else av.className = 'av ' + m.target;
+  const body = document.createElement('div'); body.className = 'body';
+  const who = document.createElement('div'); who.className = 'who';
+  who.textContent = m.role === 'user' ? (settings.name || 'Moi') : NAMES[m.target] + (m.model ? ' · ' + m.model : '');
+  body.append(who);
+  if (m.images && m.images.length) {
+    const im = document.createElement('div'); im.className = 'msg-imgs';
+    m.images.forEach((x) => { const i = document.createElement('img'); i.src = x.url; i.alt = ''; im.append(i); });
+    body.append(im);
+  }
+  const content = document.createElement('div'); content.className = m.role === 'user' ? 'content' : 'content md';
+  if (m.role === 'user') content.textContent = m.text; else content.innerHTML = m.text ? md(m.text) : '<span class="typing"><i></i><i></i><i></i></span>';
+  body.append(content);
+  if (m.error) { const e = document.createElement('div'); e.className = 'err'; e.textContent = m.error; body.append(e); }
+  if (m.sources && m.sources.length) body.append(sourcesEl(m.sources));
+  if (m.role !== 'user' && m.text && !m.streaming) body.append(toolsEl(m));
+  wrap.append(av, body);
+  return wrap;
+}
+function sourcesEl(src) {
+  const s = document.createElement('div'); s.className = 'sources';
+  src.slice(0, 8).forEach((x) => { if (!/^https?:\/\//.test(x.uri)) return; const a = document.createElement('a'); a.href = x.uri; a.target = '_blank'; a.rel = 'noopener'; a.textContent = x.title || x.uri; s.append(a); });
+  return s;
+}
+const ICON_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>';
+const ICON_OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
+function toolsEl(m) {
+  const t = document.createElement('div'); t.className = 'msg-tools';
+  const b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'btn'; b1.innerHTML = ICON_COPY + 'Copier';
+  b1.addEventListener('click', async () => { toast((await copy(m.text)) ? 'Réponse copiée' : 'Copie impossible'); });
+  const other = m.target === 'claude' ? 'gemini' : 'claude';
+  const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'btn'; b2.innerHTML = ICON_OUT + 'Demander aussi à ' + NAMES[other];
+  b2.addEventListener('click', () => { const q = lastUserText(); if (q) sendTo(other, q); });
+  const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn'; b3.innerHTML = ICON_OUT + 'Continuer dans l’app';
+  b3.addEventListener('click', () => launch(m.target, conversationAsPrompt()));
+  t.append(b1, b2, b3); return t;
+}
+function lastUserText() { const c = state.conv; if (!c) return ''; for (let i = c.messages.length - 1; i >= 0; i--) if (c.messages[i].role === 'user') return c.messages[i].text; return ''; }
+function conversationAsPrompt() {
+  const c = state.conv; if (!c) return '';
+  const tail = c.messages.slice(-6).map((m) => (m.role === 'user' ? 'Moi' : NAMES[m.target]) + ' : ' + m.text).join('\n\n');
+  return 'Voici notre échange jusqu’ici, continuons :\n\n' + tail.slice(-9000);
+}
+function renderThread() {
+  const th = $('thread'); th.replaceChildren();
+  if (!state.conv) { showHero(true); setTitle(); return; }
+  showHero(false); setTitle(state.conv.title);
+  for (const m of state.conv.messages) th.append(m.role === 'launch' ? launchEl(m) : msgEl(m));
+  scrollBottom();
+}
+function scrollBottom() { const s = $('scroll'); requestAnimationFrame(() => { s.scrollTop = s.scrollHeight; }); }
+
+/* ---------- Mode Apps (abonnements) ---------- */
+function appUrl(target, prompt) {
+  const q = encodeURIComponent(prompt.slice(0, 7000));
+  if (target === 'chatgpt') return 'https://chatgpt.com/?q=' + q;
+  return target === 'claude' ? 'https://claude.ai/new?q=' + q : 'https://gemini.google.com/app?q=' + q;
+}
+function launch(target, prompt) {
+  // Copier puis ouvrir dans le même geste que le clic (exigence de Safari iOS).
+  const copied = copy(prompt);
+  const w = window.open(appUrl(target, prompt), '_blank');
+  if (w) { try { w.opener = null; } catch {} }
+  copied.then((ok) => {
+    if (!w) toast('Ouverture bloquée : autorise les fenêtres pour cette page. La demande est copiée.', 5000);
+    else toast(ok ? `Demande copiée · ${NAMES[target]} s’ouvre. Si le champ est vide, colle-la.` : `${NAMES[target]} s’ouvre. Copie la demande si besoin.`, 4500);
+  });
+}
+function launchEl(m) {
+  const card = document.createElement('div'); card.className = 'launch';
+  const h = document.createElement('h3'); h.innerHTML = `<span class="dot ${m.target}"></span>`; h.append(document.createTextNode('Envoyé à ' + NAMES[m.target]));
+  const p = document.createElement('p'); p.textContent = 'Demande affinée et copiée. Tu peux la modifier et la renvoyer vers l’une ou l’autre app.';
+  const ta = document.createElement('textarea'); ta.value = m.prompt; ta.setAttribute('aria-label', 'Demande envoyée');
+  ta.addEventListener('input', () => { m.prompt = ta.value; saveConvs(); });
+  const row = document.createElement('div'); row.className = 'row';
+  const mk = (t) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-' + t; b.innerHTML = ICON_OUT; b.append(document.createTextNode('Ouvrir dans ' + NAMES[t])); b.addEventListener('click', () => launch(t, ta.value)); return b; };
+  const cp = document.createElement('button'); cp.type = 'button'; cp.className = 'btn'; cp.innerHTML = ICON_COPY + 'Copier';
+  cp.addEventListener('click', async () => toast((await copy(ta.value)) ? 'Copié' : 'Copie impossible'));
+  row.append(mk(m.target), ...['claude', 'gemini', 'chatgpt'].filter((t) => t !== m.target).map(mk), cp);
+  card.append(h, p, ta, row); return card;
+}
+
+/* ---------- Mode Ici (API) ---------- */
+function systemPrompt() {
+  const d = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return `Tu es l’assistant personnel de ${settings.name || 'Carlos'}. Nous sommes le ${d}. Réponds en français, de façon claire, structurée et concrète, sans remplissage. Utilise le Markdown (titres courts, listes, tableaux si utile).` + (settings.about ? `\n\nÀ propos de l’utilisateur : ${settings.about}` : '');
+}
+async function* sse(res) {
+  const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read(); if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let idx;
+    while ((idx = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, idx).trim(); buf = buf.slice(idx + 1);
+      if (line.startsWith('data:')) { const data = line.slice(5).trim(); if (data && data !== '[DONE]') { try { yield JSON.parse(data); } catch {} } }
+    }
+  }
+}
+function friendlyError(status, body, who) {
+  let msg = '';
+  try { const j = JSON.parse(body); msg = (j.error && (j.error.message || j.error.type)) || ''; } catch { msg = body.slice(0, 200); }
+  if (status === 401 || status === 403 || /api key/i.test(msg)) return `Clé API ${who} refusée. Vérifie-la dans les réglages.`;
+  if (status === 429) return `${who} : limite atteinte pour le moment. Réessaie plus tard ou passe par l’app.`;
+  if (status === 404) return `${who} : modèle introuvable. Choisis-en un autre dans les réglages.`;
+  if (status === 400 && /credit|billing|balance/i.test(msg)) return `${who} : crédit API insuffisant. Recharge-le ou passe par l’app.`;
+  return `${who} a renvoyé une erreur (${status}). ${msg}`;
+}
+async function askClaude(history, onText, signal) {
+  const messages = history.map((m) => {
+    if (m.role === 'user') {
+      const content = [];
+      (m.images || []).forEach((x) => content.push({ type: 'image', source: { type: 'base64', media_type: x.mime, data: x.data } }));
+      content.push({ type: 'text', text: m.text });
+      return { role: 'user', content };
+    }
+    return { role: 'assistant', content: m.text };
+  });
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST', signal,
+    headers: { 'content-type': 'application/json', 'x-api-key': secrets.claudeKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: settings.claudeModel, max_tokens: 8000, stream: true, system: systemPrompt(), messages })
+  });
+  if (!res.ok) throw new Error(friendlyError(res.status, await res.text(), 'Claude'));
+  for await (const ev of sse(res)) {
+    if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') onText(ev.delta.text);
+    if (ev.type === 'error') throw new Error('Claude : ' + ((ev.error && ev.error.message) || 'erreur'));
+  }
+  return { sources: [] };
+}
+async function askGemini(history, onText, signal, web) {
+  const contents = history.map((m) => {
+    if (m.role === 'user') {
+      const parts = [];
+      (m.images || []).forEach((x) => parts.push({ inline_data: { mime_type: x.mime, data: x.data } }));
+      parts.push({ text: m.text });
+      return { role: 'user', parts };
+    }
+    return { role: 'model', parts: [{ text: m.text }] };
+  });
+  const body = { systemInstruction: { parts: [{ text: systemPrompt() }] }, contents };
+  if (web) body.tools = [{ google_search: {} }];
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.geminiModel)}:streamGenerateContent?alt=sse`;
+  const res = await fetch(url, { method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': secrets.geminiKey }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(friendlyError(res.status, await res.text(), 'Gemini'));
+  const sources = []; const seen = new Set();
+  for await (const ev of sse(res)) {
+    const c = ev.candidates && ev.candidates[0];
+    if (!c) continue;
+    ((c.content && c.content.parts) || []).forEach((p) => { if (p.text && !p.thought) onText(p.text); });
+    const g = c.groundingMetadata;
+    if (g && g.groundingChunks) g.groundingChunks.forEach((x) => { if (x.web && x.web.uri && !seen.has(x.web.uri)) { seen.add(x.web.uri); sources.push({ uri: x.web.uri, title: x.web.title }); } });
+  }
+  return { sources };
+}
+
+/* ---------- Envoi ---------- */
+function newConv(target, kind, title) {
+  const c = { id: uid(), title: title.slice(0, 70), target, kind, created: Date.now(), updated: Date.now(), messages: [] };
+  convs.unshift(c); state.conv = c; return c;
+}
+function buildPrompt(text) {
+  let p = state.tpl ? state.tpl.wrap(text) : text;
+  if (settings.about && state.mode === 'launch') p += `\n\n(Contexte sur moi : ${settings.about})`;
+  return p;
+}
+function currentTarget(text) {
+  if (state.route !== 'auto') return { to: state.route, why: 'ton choix' };
+  if (state.conv && state.conv.kind === 'api' && state.conv.messages.length) return { to: state.conv.target, why: 'suite de la conversation' };
+  return route(text, state.tpl);
+}
+function hasKey(t) { if (t === 'chatgpt') return false; if (isLocked()) return true; return t === 'claude' ? !!secrets.claudeKey : !!secrets.geminiKey; }
+
+async function submit() {
+  const text = $('input').value.trim();
+  if (!text || state.busy) return;
+  const r = currentTarget(text);
+  const prompt = buildPrompt(text);
+  const tpl = state.tpl;
+  if (state.mode === 'launch' || !hasKey(r.to)) {
+    if (state.mode === 'api' && !hasKey(r.to) && r.to !== 'chatgpt') toast(`Pas de clé API ${NAMES[r.to]} : j’ouvre l’app à la place.`);
+    const c = newConv(r.to, 'launch', (tpl ? tpl.ic + ' ' : '') + text);
+    c.messages.push({ role: 'launch', target: r.to, prompt });
+    saveConvs(); resetComposer(); renderThread(); renderHistory();
+    launch(r.to, prompt);
+    return;
+  }
+  if (isLocked() && !(await askUnlock())) return;
+  if (!hasKey(r.to)) { toast(`Pas de clé API ${NAMES[r.to]} : j’ouvre l’app à la place.`); launch(r.to, prompt); resetComposer(); return; }
+  resetComposer();
+  await sendTo(r.to, prompt, tpl && tpl.web, text);
+}
+async function sendTo(target, prompt, web, displayText) {
+  if (isLocked() && !(await askUnlock())) return;
+  if (!hasKey(target)) { launch(target, prompt); return; }
+  let c = state.conv;
+  if (!c || c.kind !== 'api' || c.target !== target) c = newConv(target, 'api', displayText || prompt);
+  const images = state.images.splice(0); renderAttach();
+  c.messages.push({ role: 'user', text: prompt, images });
+  const ai = { role: 'assistant', target, model: target === 'claude' ? settings.claudeModel : settings.geminiModel, text: '', streaming: true };
+  c.messages.push(ai); c.updated = Date.now();
+  renderThread(); renderHistory();
+  const nodes = $('thread').querySelectorAll('.msg'); let node = nodes[nodes.length - 1];
+  const content = node.querySelector('.content');
+  const useWeb = web || (target === 'gemini' && /(web|récent|infos)/.test(route(prompt).why));
+  setBusy(true);
+  const ctrl = new AbortController(); state.abort = ctrl;
+  let pending = false;
+  const paint = () => { pending = false; content.innerHTML = md(ai.text) || '<span class="typing"><i></i><i></i><i></i></span>'; const s = $('scroll'); if (s.scrollHeight - s.scrollTop - s.clientHeight < 160) s.scrollTop = s.scrollHeight; };
+  const onText = (t) => { ai.text += t; if (!pending) { pending = true; requestAnimationFrame(paint); } };
+  try {
+    const history = c.messages.filter((m) => m !== ai && (m.role === 'user' || m.role === 'assistant') && (m.role === 'user' || m.text));
+    const out = target === 'claude' ? await askClaude(history, onText, ctrl.signal) : await askGemini(history, onText, ctrl.signal, useWeb);
+    ai.sources = out.sources;
+    if (!ai.text) ai.error = 'Réponse vide. Réessaie ou passe par l’app.';
+  } catch (e) {
+    if (e.name === 'AbortError') { if (!ai.text) ai.text = '_Arrêté._'; }
+    else if (e instanceof TypeError) ai.error = 'Connexion impossible. Vérifie ta connexion internet.';
+    else ai.error = e.message;
+  }
+  ai.streaming = false; c.updated = Date.now(); state.abort = null;
+  if (!ai.text && ai.error) c.messages = c.messages.filter((m) => m !== ai || m.error);
+  setBusy(false); saveConvs(); renderThread(); renderHistory();
+}
+function setBusy(b) {
+  state.busy = b;
+  $('sendIcon').innerHTML = b ? '<rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" stroke="none"/>' : '<path d="M12 19V5M5 12l7-7 7 7"/>';
+  $('sendBtn').setAttribute('aria-label', b ? 'Arrêter' : 'Envoyer');
+  $('sendBtn').disabled = b ? false : !$('input').value.trim();
+}
+function resetComposer() { $('input').value = ''; autoGrow(); setTemplate(null); $('sendBtn').disabled = true; }
+function openConv(id) { const c = convs.find((x) => x.id === id); if (!c) return; state.conv = c; renderThread(); renderHistory(); updateHint(); }
+function newChat() { state.conv = null; state.images = []; renderAttach(); setTemplate(null); renderThread(); renderHistory(); updateHint(); closeDrawer(); }
+
+/* ---------- Indication de destination ---------- */
+function updateHint() {
+  const text = $('input').value.trim();
+  const h = $('routeHint'); h.replaceChildren();
+  if (!text && !state.tpl) { h.textContent = state.mode === 'launch' ? 'Mode Apps : ta demande s’ouvre dans l’app, sur ton abonnement.' : 'Mode Ici : la réponse s’affiche dans la page.'; return; }
+  const r = currentTarget(text || (state.tpl ? state.tpl.n : ''));
+  const d = document.createElement('span'); d.className = 'dot ' + r.to;
+  const fallback = state.mode === 'api' && !hasKey(r.to);
+  h.append(d, document.createTextNode(`${NAMES[r.to]} · ${r.why}` + (state.mode === 'launch' || fallback ? ' · ouverture dans l’app' : ' · réponse ici')));
+}
+
+/* ---------- Images ---------- */
+function renderAttach() {
+  const row = $('attachRow'); row.replaceChildren(); row.hidden = !state.images.length;
+  state.images.forEach((x, i) => {
+    const t = document.createElement('div'); t.className = 'thumb';
+    const im = document.createElement('img'); im.src = x.url; im.alt = '';
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = '×'; b.setAttribute('aria-label', 'Retirer l’image');
+    b.addEventListener('click', () => { state.images.splice(i, 1); renderAttach(); });
+    t.append(im, b); row.append(t);
+  });
+}
+function readImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 1568; let { width: w, height: h } = img; const k = Math.min(1, max / Math.max(w, h)); w = Math.round(w * k); h = Math.round(h * k);
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      const durl = cv.toDataURL('image/jpeg', 0.85); URL.revokeObjectURL(url);
+      resolve({ mime: 'image/jpeg', data: durl.split(',')[1], url: durl });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); };
+    img.src = url;
+  });
+}
+
+/* ---------- Réglages ---------- */
+async function openSettings() {
+  if (isLocked() && !(await askUnlock())) return;
+  $('sCode').value = ''; $('removeLock').hidden = !settings.lock;
+  $('sName').value = settings.name; $('sMode').value = settings.mode; $('sAbout').value = settings.about;
+  $('sClaudeKey').value = secrets.claudeKey; $('sClaudeModel').value = settings.claudeModel;
+  $('sGeminiKey').value = secrets.geminiKey; $('sGeminiModel').value = settings.geminiModel;
+  keyStates(); $('sheetBack').hidden = false; closeDrawer();
+}
+function keyStates() {
+  [['kClaude', secrets.claudeKey], ['kGemini', secrets.geminiKey]].forEach(([id, k]) => { const e = $(id); e.textContent = k ? 'Clé enregistrée' : 'Pas de clé'; e.classList.toggle('on', !!k); });
+  const kl = $('kLock'); kl.textContent = settings.lock ? 'Clés chiffrées' : 'Pas de code'; kl.classList.toggle('on', !!settings.lock);
+}
+async function saveSettings() {
+  settings.name = $('sName').value.trim() || 'Carlos';
+  settings.mode = $('sMode').value;
+  settings.about = $('sAbout').value.trim();
+  secrets.claudeKey = $('sClaudeKey').value.trim();
+  settings.claudeModel = $('sClaudeModel').value;
+  secrets.geminiKey = $('sGeminiKey').value.trim();
+  settings.geminiModel = $('sGeminiModel').value.trim() || 'gemini-3.7-flash';
+  const code = $('sCode').value.trim();
+  if (code && code.length < 4) { toast('Le code doit faire au moins 4 caractères.'); return; }
+  if (code) await lockWith(code); else if (settings.lock) await lockWithSession();
+  persistSettings(); setMode(settings.mode); keyStates(); greet();
+  $('sheetBack').hidden = true; toast('Réglages enregistrés');
+}
+async function lockWithSession() {
+  // Rechiffre avec la clé dérivée gardée en mémoire ; sinon, redemande le code (jamais stocké).
+  if (memKey) { await encryptWith(memKey.key, memKey.salt); return; }
+  const ok = await askUnlock(true);
+  if (!ok) throw new Error('code requis');
+}
+function askUnlock(reencrypt) {
+  return new Promise((resolve) => {
+    $('lockBack').hidden = false; $('lockErr').hidden = true; $('lockCode').value = ''; setTimeout(() => $('lockCode').focus(), 50);
+    const done = (v) => { $('lockBack').hidden = true; $('lockForm').onsubmit = null; $('lockCancel').onclick = null; resolve(v); };
+    $('lockCancel').onclick = () => done(false);
+    $('lockForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const code = $('lockCode').value;
+      try {
+        if (reencrypt) { const keep = { ...secrets }; await unlockWith(code); Object.assign(secrets, keep); await lockWith(code); }
+        else await unlockWith(code);
+        done(true);
+      } catch { $('lockErr').hidden = false; }
+    };
+  });
+}
+function setMode(m) {
+  state.mode = m;
+  document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  $('modePill').textContent = m === 'launch' ? 'Mode Apps · tes abonnements Pro' : 'Mode Ici · réponses dans la page';
+  $('attachBtn').hidden = m !== 'api';
+  updateHint();
+}
+function greet() { $('greet').textContent = greetWord(); $('hName').textContent = settings.name || 'Carlos'; }
+
+/* ---------- Tiroir (mobile) ---------- */
+function openDrawer() { $('app').classList.add('drawer-open'); $('scrim').hidden = false; }
+function closeDrawer() { $('app').classList.remove('drawer-open'); $('scrim').hidden = true; }
+
+/* ---------- Saisie ---------- */
+function autoGrow() { const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, window.innerHeight * 0.4) + 'px'; }
+$('input').addEventListener('input', () => { autoGrow(); if (!state.busy) $('sendBtn').disabled = !$('input').value.trim(); updateHint(); });
+$('input').addEventListener('keydown', (e) => {
+  const touch = matchMedia('(pointer: coarse)').matches;
+  if (e.key === 'Enter' && !e.shiftKey && !touch && !e.isComposing) { e.preventDefault(); submit(); }
+});
+$('composer').addEventListener('submit', (e) => { e.preventDefault(); if (state.busy && state.abort) { state.abort.abort(); return; } submit(); });
+document.querySelectorAll('[data-route]').forEach((b) => b.addEventListener('click', () => {
+  state.route = b.dataset.route;
+  document.querySelectorAll('[data-route]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  updateHint();
+}));
+document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+  setMode(b.dataset.mode);
+  if (b.dataset.mode === 'api' && !settings.lock && !secrets.claudeKey && !secrets.geminiKey) toast('Ajoute une clé API dans les réglages pour les réponses ici.', 4000);
+}));
+$('attachBtn').addEventListener('click', () => $('file').click());
+$('file').addEventListener('change', async (e) => {
+  for (const f of [...e.target.files].slice(0, 4)) { try { state.images.push(await readImage(f)); } catch { toast('Image illisible'); } }
+  e.target.value = ''; renderAttach();
+});
+$('newBtn').addEventListener('click', newChat);
+$('newTop').addEventListener('click', newChat);
+$('menuBtn').addEventListener('click', openDrawer);
+$('scrim').addEventListener('click', closeDrawer);
+$('settingsBtn').addEventListener('click', openSettings);
+$('settingsBtn2').addEventListener('click', openSettings);
+$('saveBtn').addEventListener('click', () => saveSettings().catch(() => toast('Réglages non enregistrés : code requis.')));
+$('removeLock').addEventListener('click', () => { settings.lock = null; memKey = null; try { sessionStorage.removeItem('atelier.unlocked'); } catch {} persistSettings(); keyStates(); $('removeLock').hidden = true; toast('Code retiré : clés stockées sans chiffrement sur cet appareil.'); });
+$('sheetBack').addEventListener('click', (e) => { if (e.target === $('sheetBack')) $('sheetBack').hidden = true; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('sheetBack').hidden = true; closeDrawer(); } });
+$('clearBtn').addEventListener('click', () => { convs = []; saveConvs(); newChat(); $('sheetBack').hidden = true; toast('Historique effacé'); });
+$('thread').addEventListener('click', async (e) => {
+  const b = e.target.closest('.copy-code'); if (!b) return;
+  const code = b.parentElement.querySelector('code'); toast((await copy(code.textContent)) ? 'Code copié' : 'Copie impossible');
+});
+$('scroll').addEventListener('scroll', () => $('top').classList.toggle('scrolled', $('scroll').scrollTop > 4), { passive: true });
+
+/* Dictée vocale (si le navigateur la propose) */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  const mic = $('micBtn'); mic.hidden = false; let rec = null;
+  mic.addEventListener('click', () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = 'fr-FR'; rec.interimResults = true; rec.continuous = false;
+    const base = $('input').value ? $('input').value.trim() + ' ' : '';
+    rec.onresult = (ev) => { let t = ''; for (const r of ev.results) t += r[0].transcript; $('input').value = base + t; autoGrow(); $('sendBtn').disabled = !$('input').value.trim(); updateHint(); };
+    rec.onend = () => { rec = null; mic.classList.remove('on'); };
+    rec.onerror = () => { rec = null; mic.classList.remove('on'); toast('Dictée indisponible'); };
+    mic.classList.add('on'); rec.start();
+  });
+}
+
+/* Partage vers la page (?q=…) et raccourcis iOS */
+const params = new URLSearchParams(location.search);
+const incoming = [params.get('q') || params.get('text') || params.get('title'), params.get('url')].filter(Boolean).join('\n');
+if (incoming) { $('input').value = incoming; history.replaceState(null, '', location.pathname); }
+const to = params.get('to'); if (to === 'claude' || to === 'gemini' || to === 'chatgpt') { const b = document.querySelector(`[data-route="${to}"]`); if (b) b.click(); }
+
+/* Démarrage */
+renderTemplates(); renderHistory(); setMode(state.mode); greet(); autoGrow(); renderThread();
+$('sendBtn').disabled = !$('input').value.trim();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
